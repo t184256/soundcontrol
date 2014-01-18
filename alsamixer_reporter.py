@@ -4,7 +4,8 @@ import liblo, pyalsa.alsamixer, select
 
 PATH = '/alsamixer_reporter/'
 ADDRESS = ('localhost', 8000)
-NAMES = ('Master', 'PCM')
+NAMES = ('Master', 'PCM', 'Capture')
+CAPTURE = ('Capture',)
 TIMEOUT=2
 
 def main():
@@ -18,9 +19,10 @@ def main():
             for element in elements.values(): callback(element)
 
 def callback(element, index_unused=None):
-    mn, mx = element.get_volume_range()
-    vol = float(element.get_volume() - mn) / (mx - mn)
-    mute = not element.get_switch() if element.has_switch() else False
+    cap = element.name in CAPTURE
+    mn, mx = element.get_volume_range(cap)
+    vol = float(element.get_volume(0, cap) - mn) / (mx - mn)
+    mute = not element.get_switch(0, cap) if element.has_switch(cap) else False
     liblo.send(ADDRESS, PATH + element.name, vol)
     liblo.send(ADDRESS, PATH + element.name + '/mute', mute)
 

@@ -10,27 +10,31 @@ class LibLoTest(object):
     def __init__(self, port = None):
         self.server = liblo.Server(port)
         print "mastermind listening on URL: " + self.server.get_url()
-        self.server.add_method('/2/fader_master', 'f', self.cb_fader_master)
-        self.server.add_method('/alsamixer_reporter/Master', 'f', self.cb_master)
-        self.server.add_method('/alsamixer_reporter/Master/mute', None,
-                               self.cb_master_mute_tab)
-        self.server.add_method('/2/toggle_master', None, self.cb_master_mute_alsa)
+        self.register_volume_control('Master',
+                                     '/2/fader_master', '/2/toggle_master')
+        self.register_volume_control('Beep', '/2/fader_beep', '/2/toggle_beep')
+        self.register_volume_control('Capture', '/2/fader_mic', '/2/toggle_mic')
 
     def run(self):
         while True: self.server.recv(10)
 
-    def cb_master(self, path, args, types, src):
-        liblo.send(TAB_ADDRESS, '/2/fader_master', *args)
-
-    def cb_fader_master(self, path, args, types, src):
-        liblo.send(MIXER_ADDRESS, '/alsamixer_controller/' + 'Master', *args)
-
-    def cb_master_mute_alsa(self, path, args, types, src):
-        liblo.send(MIXER_ADDRESS, '/alsamixer_controller/' + 'Master' + '/mute',
-                  not bool(args[0]))
-
-    def cb_master_mute_tab(self, path, args, types, src):
-        liblo.send(TAB_ADDRESS, '/2/toggle_master/', float(not args[0]))
+    def register_volume_control(self, name, tab_path, tab_path_mute=None):
+        def cb_alsa2tab_vol(path, args, types, src):
+            liblo.send(TAB_ADDRESS, tab_path, *args)
+        self.server.add_method('/alsamixer_reporter/' + name, 'f',
+                               cb_alsa2tab_vol)
+        def cb_tab2alsa_vol(path, args, types, src):
+            liblo.send(MIXER_ADDRESS, '/alsamixer_controller/' + name, *args)
+        self.server.add_method(tab_path, 'f', cb_tab2alsa_vol)
+        if not tab_path_mute: return
+        def cb_tab2alsa_mute(path, args, types, src):
+            liblo.send(MIXER_ADDRESS, '/alsamixer_controller/' + name + '/mute',
+                      not bool(args[0]))
+        self.server.add_method(tab_path_mute, None, cb_tab2alsa_mute)
+        def cb_alsa2tab_mute(path, args, types, src):
+            liblo.send(TAB_ADDRESS, tab_path_mute, float(not args[0]))
+        self.server.add_method('/alsamixer_reporter/' + name + '/mute', None,
+                               cb_alsa2tab_mute)
 
 if __name__ == '__main__': LibLoTest(PORT).run()
 
