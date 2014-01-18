@@ -19,7 +19,9 @@ def main():
 def callback(element, index_unused=None):
     mn, mx = element.get_volume_range()
     vol = float(element.get_volume() - mn) / (mx - mn)
+    mute = not element.get_switch() if element.has_switch() else False
     liblo.send(ADDRESS, PATH + element.name, vol)
+    liblo.send(ADDRESS, PATH + element.name + '/mute', mute)
 
 if __name__ == "__main__": main()
 
