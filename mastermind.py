@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+# written by Alexander Sosedkin, distributed under GNU GPLv3, please see LICENSE
 import liblo
 
 MIXER_ADDRESS = ('localhost', 9001)

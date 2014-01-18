@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# written by Alexander Sosedkin, distributed under GNU GPLv3, please see LICENSE
 import liblo, pyalsa.alsamixer, select
 
 PATH = '/alsamixer_reporter/'
