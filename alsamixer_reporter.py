@@ -13,8 +13,9 @@ def main():
     for element in elements.values(): element.set_callback(callback)
     ep = select.epoll(); ep.register(*m.poll_fds[0])
     while True:
-        m.handle_events(); ep.poll(timeout=TIMEOUT)
-        for element in elements.values(): callback(element)
+        m.handle_events()
+        if not ep.poll(timeout=TIMEOUT): # if nothing happened in TIMEOUT secs
+            for element in elements.values(): callback(element)
 
 def callback(element, index_unused=None):
     mn, mx = element.get_volume_range()
