@@ -29,7 +29,7 @@
 #include <linux/input.h>
 #include <linux/joystick.h>
 
-int debug = 0;
+int debug = 1;
 
 jack_client_t* client;
 jack_port_t* output_port;
@@ -38,7 +38,7 @@ jack_position_t position;
 jack_transport_state_t state;
 void* port_buffer;
 
-int oct, black_keys;
+int oct;
 int *axis;
 int isPoly = 0;
 int axis_prev_velocity[24];
@@ -72,52 +72,26 @@ static int process_callback(jack_nframes_t nframes, void *arg)
               if (debug) printf("Polyphonic mode enabled\n");
             }
 
-            if (black_keys)
-            {
-              if (ax==0) axis_note = -2; //dummy
-              else if (ax==1) axis_note = 0x02; //leftY (Modulation)
-              else if (ax==2) axis_note = 0x0A; //rightH (Pan)
-              else if (ax==3) axis_note = -2; //dummy
-              else if (ax==4) axis_note = 0x10; //Acc X (Misc 1) 0x10
-              else if (ax==5) axis_note = 0x11; //Acc Y (Misc 2) 0x11
-              else if (ax==6) axis_note = 0x12; //Acc Z (Misc 3) 0x12
-              else if (ax==7) axis_note = -2; //gyro (doesn't work)
-              else if (ax==8) axis_note = 61+(12*oct);  //up
-              else if (ax==9) axis_note = 62+(12*oct);  //right
-              else if (ax==10) axis_note = 63+(12*oct); //down
-              else if (ax==11) axis_note = 60+(12*oct); //left
-              else if (ax==12) axis_note = 65+(12*oct); //l2
-              else if (ax==13) axis_note = 66+(12*oct); //r2
-              else if (ax==14) axis_note = 64+(12*oct); //l1
-              else if (ax==15) axis_note = 67+(12*oct); //r1
-              else if (ax==16) axis_note = 69+(12*oct); //triangle
-              else if (ax==17) axis_note = 70+(12*oct); //circle
-              else if (ax==18) axis_note = 71+(12*oct); //cross
-              else if (ax==19) axis_note = 68+(12*oct); //square
-            }
-            else
-            {
-              if (ax==0) axis_note = -2; //dummy
-              else if (ax==1) axis_note = 0x02; //leftY (Modulation)
-              else if (ax==2) axis_note = 0x0A; //rightH (Pan)
-              else if (ax==3) axis_note = -2; //dummy
-              else if (ax==4) axis_note = 0x10; //Acc X (Misc 1) 0x10
-              else if (ax==5) axis_note = 0x11; //Acc Y (Misc 2) 0x11
-              else if (ax==6) axis_note = 0x12; //Acc Z (Misc 3) 0x12
-              else if (ax==7) axis_note = -2; //gyro (doesn't work)
-              else if (ax==8) axis_note = 62+(12*oct);  //up
-              else if (ax==9) axis_note = 64+(12*oct);  //right
-              else if (ax==10) axis_note = 65+(12*oct); //down
-              else if (ax==11) axis_note = 60+(12*oct); //left
-              else if (ax==12) axis_note = 69+(12*oct); //l2
-              else if (ax==13) axis_note = 71+(12*oct); //r2
-              else if (ax==14) axis_note = 67+(12*oct); //l1
-              else if (ax==15) axis_note = 72+(12*oct); //r1
-              else if (ax==16) axis_note = 76+(12*oct); //triangle
-              else if (ax==17) axis_note = 77+(12*oct); //circle
-              else if (ax==18) axis_note = 79+(12*oct); //cross
-              else if (ax==19) axis_note = 74+(12*oct); //square
-            }
+            if (ax==0) axis_note = -2; //dummy
+            else if (ax==1) axis_note = 0x02; //leftY (Modulation)
+            else if (ax==2) axis_note = 0x0A; //rightH (Pan)
+            else if (ax==3) axis_note = -2; //dummy
+            else if (ax==4) axis_note = 0x10; //Acc X (Misc 1) 0x10
+            else if (ax==5) axis_note = 0x11; //Acc Y (Misc 2) 0x11
+            else if (ax==6) axis_note = 0x12; //Acc Z (Misc 3) 0x12
+            else if (ax==7) axis_note = -2; //gyro (doesn't work)
+            else if (ax==8) axis_note = 62+(12*oct);  //up
+            else if (ax==9) axis_note = 64+(12*oct);  //right
+            else if (ax==10) axis_note = 65+(12*oct); //down
+            else if (ax==11) axis_note = 60+(12*oct); //left
+            else if (ax==12) axis_note = 69+(12*oct); //l2
+            else if (ax==13) axis_note = 71+(12*oct); //r2
+            else if (ax==14) axis_note = 67+(12*oct); //l1
+            else if (ax==15) axis_note = 72+(12*oct); //r1
+            else if (ax==16) axis_note = 76+(12*oct); //triangle
+            else if (ax==17) axis_note = 77+(12*oct); //circle
+            else if (ax==18) axis_note = 79+(12*oct); //cross
+            else if (ax==19) axis_note = 74+(12*oct); //square
 
             if (ax==1)
               axis_velocity = abs(axis[ax]/0xff) - 1; // modulation
@@ -203,10 +177,8 @@ static int xrun_callback(void *arg)
     return 0;
 }
 
-static void do_jack(jack_client_t* client, char *button, int bk)
+static void do_jack(jack_client_t* client, char *button)
 {
-    black_keys = bk;
-
     // Jack Transport
     if (button[0] && (button[0] != button_prev_val[0])) //select :: Change octave
     {
@@ -287,28 +259,17 @@ static void do_jack(jack_client_t* client, char *button, int bk)
 
 int main(int argc, char **argv)
 {
-    int fd, black_keys;
+    int fd;
     char *button;
     unsigned char axes = 2;
     unsigned char buttons = 2;
 
     if (argc < 2) {
-        printf("Usage: %s [-black] <jsX device>\n", argv[0]);
+        printf("Usage: %s <jsX device>\n", argv[0]);
         return 1;
     }
 
-    black_keys = 0;
-    if (argc == 3) {
-      if (argv[1][0] == '-' && argv[1][1] == 'b') {
-          black_keys = 1;
-          if (debug) printf("Using black keys\n");
-        }
-    }
-
-    if (black_keys)
-      fd = open(argv[2], O_RDONLY);
-    else
-      fd = open(argv[1], O_RDONLY);
+    fd = open(argv[1], O_RDONLY);
 
     if (fd < 0) {
         perror("open(argv[x])");
@@ -362,7 +323,7 @@ int main(int argc, char **argv)
             break;
         }
 
-        do_jack(client, button, black_keys);
+        do_jack(client, button);
 
     }
 
