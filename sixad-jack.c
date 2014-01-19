@@ -38,7 +38,6 @@ jack_position_t position;
 jack_transport_state_t state;
 void* port_buffer;
 
-int oct;
 int *axis;
 int isPoly = 0;
 int axis_prev_velocity[24];
@@ -80,18 +79,18 @@ static int process_callback(jack_nframes_t nframes, void *arg)
             else if (ax==5) axis_note = 0x11; //Acc Y (Misc 2) 0x11
             else if (ax==6) axis_note = 0x12; //Acc Z (Misc 3) 0x12
             else if (ax==7) axis_note = -2; //gyro (doesn't work)
-            else if (ax==8) axis_note = 62+(12*oct);  //up
-            else if (ax==9) axis_note = 64+(12*oct);  //right
-            else if (ax==10) axis_note = 65+(12*oct); //down
-            else if (ax==11) axis_note = 60+(12*oct); //left
-            else if (ax==12) axis_note = 69+(12*oct); //l2
-            else if (ax==13) axis_note = 71+(12*oct); //r2
-            else if (ax==14) axis_note = 67+(12*oct); //l1
-            else if (ax==15) axis_note = 72+(12*oct); //r1
-            else if (ax==16) axis_note = 76+(12*oct); //triangle
-            else if (ax==17) axis_note = 77+(12*oct); //circle
-            else if (ax==18) axis_note = 79+(12*oct); //cross
-            else if (ax==19) axis_note = 74+(12*oct); //square
+            else if (ax==8) axis_note = 62;  //up
+            else if (ax==9) axis_note = 64;  //right
+            else if (ax==10) axis_note = 65; //down
+            else if (ax==11) axis_note = 60; //left
+            else if (ax==12) axis_note = 69; //l2
+            else if (ax==13) axis_note = 71; //r2
+            else if (ax==14) axis_note = 67; //l1
+            else if (ax==15) axis_note = 72; //r1
+            else if (ax==16) axis_note = 76; //triangle
+            else if (ax==17) axis_note = 77; //circle
+            else if (ax==18) axis_note = 79; //cross
+            else if (ax==19) axis_note = 74; //square
 
             if (ax==1)
               axis_velocity = abs(axis[ax]/0xff) - 1; // modulation
@@ -182,22 +181,7 @@ static void do_jack(jack_client_t* client, char *button)
     // Jack Transport
     if (button[0] && (button[0] != button_prev_val[0])) //select :: Change octave
     {
-        if (oct == 0) {
-          oct = 1; //C6
-          if (debug) printf("STAT: Changed base octave to C6\n");
-        } else if (oct == 1) {
-          oct = 2; //C7
-          if (debug) printf("STAT: Changed base octave to C7\n");
-        } else if (oct == 2) {
-          oct = -2; //C3
-          if (debug) printf("STAT: Changed base octave to C3\n");
-        } else if (oct == -2) {
-          oct = -1; //C4
-          if (debug) printf("STAT: Changed base octave to C4\n");
-        } else {
-          oct = 0; //C5
-          if (debug) printf("STAT: Changed base octave to C5\n");
-        }
+      if (debug) printf("NOT CHANGING OCTAVE\n");
     }
     else if (button[3] && (button[3] != button_prev_val[3])) //start :: Start/Stop Transport
     {
@@ -304,7 +288,6 @@ int main(int argc, char **argv)
       axis_prev_action[h] = 0;
       axis_prev_velocity[h] = 0;
     }
-    oct = 0;
 
     while (1) {
 
