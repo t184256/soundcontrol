@@ -30,6 +30,7 @@
 #include <linux/joystick.h>
 
 int debug = 1;
+int CHAN = 10 - 1;
 
 jack_client_t* client;
 jack_port_t* output_port;
@@ -66,7 +67,7 @@ static int process_callback(jack_nframes_t nframes, void *arg)
               buffer = jack_midi_event_reserve(port_buffer, i, 3);
               buffer[2] = 0x00; //as much poly as the host can get
               buffer[1] = 0x7F; //enable poly
-              buffer[0] = 0xB0; //control mode
+              buffer[0] = 0xB0 + CHAN; //control mode
               isPoly = 1;
               if (debug) printf("Polyphonic mode enabled\n");
             }
@@ -79,18 +80,19 @@ static int process_callback(jack_nframes_t nframes, void *arg)
             else if (ax==5) axis_note = 0x11; //Acc Y (Misc 2) 0x11
             else if (ax==6) axis_note = 0x12; //Acc Z (Misc 3) 0x12
             else if (ax==7) axis_note = -2; //gyro (doesn't work)
-            else if (ax==8) axis_note = 62;  //up
-            else if (ax==9) axis_note = 64;  //right
-            else if (ax==10) axis_note = 65; //down
-            else if (ax==11) axis_note = 60; //left
-            else if (ax==12) axis_note = 69; //l2
-            else if (ax==13) axis_note = 71; //r2
-            else if (ax==14) axis_note = 67; //l1
-            else if (ax==15) axis_note = 72; //r1
-            else if (ax==16) axis_note = 76; //triangle
-            else if (ax==17) axis_note = 77; //circle
-            else if (ax==18) axis_note = 79; //cross
-            else if (ax==19) axis_note = 74; //square
+            else if (ax==8) axis_note = 48;  //up
+            else if (ax==9) axis_note = 45;  //right
+            else if (ax==10) axis_note = 41; //down
+            else if (ax==11) axis_note = 47; //left
+            else if (ax==12) axis_note = 35; //l2
+            else if (ax==13) axis_note = 36; //r2
+            else if (ax==14) axis_note = 38; //l1
+            else if (ax==15) axis_note = 40; //r1
+            else if (ax==16) axis_note = 37; //triangle (37, 46)
+            else if (ax==17) axis_note = 44; //circle
+            else if (ax==18) axis_note = 76; //cross
+            else if (ax==19) axis_note = 42; //square
+	    // 49 - crash
 
             if (ax==1)
               axis_velocity = abs(axis[ax]/0xff) - 1; // modulation
@@ -107,6 +109,8 @@ static int process_callback(jack_nframes_t nframes, void *arg)
                 else if (axis_velocity > 127)
                   axis_velocity = 127;
               }
+              if ((ax == 12 || ax == 13) && axis_velocity < 48)
+                axis_velocity = 48;
             } else
               axis_velocity = (axis[ax]/0xff) - 1; // all the others
 
@@ -131,9 +135,9 @@ static int process_callback(jack_nframes_t nframes, void *arg)
                     buffer[2] = axis_velocity;
                     buffer[1] = axis_note;
                     if (ax>7)
-                      buffer[0] = 0x90; //note-on
+                      buffer[0] = 0x90 + CHAN; //note-on
                     else
-                      buffer[0] = 0xB0; //control/mode
+                      buffer[0] = 0xB0 + CHAN; //control/mode
                     axis_prev_action[ax] = 1;
                     if (debug && (ax<4 || ax>7) && axis_note>0) printf("PLAY: axis %02i; velocity is %03i; playing ? %i\n", ax, axis_velocity, axis_playing[ax]);
                 }
@@ -143,9 +147,9 @@ static int process_callback(jack_nframes_t nframes, void *arg)
                     buffer[2] = axis_velocity;
                     buffer[1] = axis_note;
                     if (ax>7)
-                      buffer[0] = 0x80;//note-off
+                      buffer[0] = 0x80 + CHAN;//note-off
                     else
-                      buffer[0] = 0xB0; //control/mode
+                      buffer[0] = 0xB0 + CHAN; //control/mode
                     axis_prev_action[ax] = 0;
                     if (debug && (ax<4 || ax>7) && axis_note>0) printf("STOP: axis %02i; velocity is %03i; playing ? %i\n", ax, axis_velocity, axis_playing[ax]);
                 }
@@ -157,9 +161,9 @@ static int process_callback(jack_nframes_t nframes, void *arg)
                 buffer[2] = axis_velocity;
                 buffer[1] = axis_note;
                 if (ax>7)
-                    buffer[0] = 0xA0; //aftertouch
+                    buffer[0] = 0xA0 + CHAN; //aftertouch
                 else
-                    buffer[0] = 0xB0; //control/mode
+                    buffer[0] = 0xBA + CHAN; //control/mode
                 if (debug && (ax<4 || ax>7) && axis_note>0) printf("CTRL: axis %02i; velocity is %03i; playing ? %i\n", ax, axis_velocity, axis_playing[ax]);
             }
 
@@ -254,6 +258,7 @@ int main(int argc, char **argv)
     }
 
     fd = open(argv[1], O_RDONLY);
+    printf("OPENED %p\n", fd);
 
     if (fd < 0) {
         perror("open(argv[x])");
