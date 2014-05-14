@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="" schemaVersion="1">
+    <info>
+        <name>X220-Touchpad</name>
+        <author>Alexander Sosedkin</author>
+    </info>
+    <controller id="X220-Touchpad">
+        <scriptfiles>
+            <file functionprefix="X220T" filename="X220-Touchpad.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group>[Channel1]</group>
+                <key>X220T.scratch</key>
+                <status>0xE0</status>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>X220T.pressure</key>
+                <status>0xE1</status>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs/>
+    </controller>
+</MixxxControllerPreset>
