@@ -1,0 +1,4 @@
+#!/bin/sh
+
+exec schedtool -R -p 95 -n -10 -e mixxx
+
