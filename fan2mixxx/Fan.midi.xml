@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="" schemaVersion="1">
+    <info>
+        <name>Fan</name>
+        <author>Alexander Sosedkin</author>
+    </info>
+    <controller id="Fan">
+        <scriptfiles>
+            <file functionprefix="Fan" filename="Fan.js"/>
+        </scriptfiles>
+        <controls>
+            <control>
+                <group></group>
+                <key>Fan.scratch</key>
+                <status>0xE0</status>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+        </controls>
+        <outputs/>
+    </controller>
+</MixxxControllerPreset>
