@@ -3,7 +3,7 @@
 
 import sys
 import time
-from math import sqrt, pi, sin
+from math import pi, sin
 from evdev import InputDevice, ecodes
 
 import rtmidi
@@ -12,7 +12,7 @@ MidiOut.open_virtual_port(name='Fan')
 def cc_send(val, chan=0):
     return MidiOut.send_message([0xE0 + chan, 0, val])
 
-SCALE = 0.57
+SCALE = 0.575
 X_TO_Y = 1.05
 TRANSMISSION_SCALE = 128
 CHANS = 8
@@ -21,16 +21,16 @@ INJECT_ZERO_AFTER = 0.01
 #FRICTION2 = 0.05
 WEIGHT = 1./ 4
 SPEEDMATCH = 1./ 4
-WEIGHT_NEAR_ONE = 1./ 128
-SPEEDMATCH_NEAR_ONE = 1./ 8
+WEIGHT_NEAR_ONE = 1./ 1024
+SPEEDMATCH_NEAR_ONE = 1./ 4
 FORGIVING_NEAR_ONE = 0.33
 FORGIVING_NEAR_ONE_HIGHER_THAN = 3
 FORGIVING_NEAR_ONE_LOWER_THAN = 2
-FORGIVING_ADJUST_SCALE = 0.01
-FORGIVING_ADJUST_SCALE_BY = 0.0025
-TEND_TO_ONE = 0.03
+FORGIVING_ADJUST_SCALE = 0.0001
+FORGIVING_ADJUST_SCALE_BY = 0.005
+TEND_TO_ONE = 0.01
 #tend_to_one_strength = lambda d1_n: d1_n**2 * (1-d1_n)**2 / 0.0625
-tend_to_one_strength = lambda d1_n: (1-d1_n)**(1./5)
+tend_to_one_strength = lambda d1_n: (1-d1_n)**(1./3)
 
 
 et = lambda event: event.sec + event.usec * 1.e-6
@@ -46,6 +46,7 @@ def main():
     v_prev = 0.
     sys.stderr.write('start\n'); sys.stderr.flush()
     ts = t_now = time.time()
+    d1_prev = 0.
     i = 32
     scale = SCALE
     while True:
@@ -82,7 +83,6 @@ def main():
             if dtt < -FORGIVING_NEAR_ONE_LOWER_THAN:
                 target += FORGIVING_NEAR_ONE
                 #sys.stderr.write('forg+\n'); sys.stderr.flush()
-        dtt = target - transmitted
 
         target += s
         target_real += s
@@ -113,14 +113,15 @@ def main():
             d1_norm = abs(d1) / TEND_TO_ONE
             d1 = d1 + tend_to_one_strength(d1_norm) * sin(pi + d1 * K) / K
             v = 1 + d1
-            if abs(v_prev - 1.) < abs(d1):
+            if abs(d1_prev) > abs(d1):
                 scale += FORGIVING_ADJUST_SCALE_BY * d1
                 if d1 > +FORGIVING_ADJUST_SCALE:
                     sys.stderr.write('scale+ %s\n' % str(scale))
                     sys.stderr.flush()
-                if d1 < -FORGIVING_ADJUST_SCALE:
+                elif d1 < -FORGIVING_ADJUST_SCALE:
                     sys.stderr.write('scale- %s\n' % str(scale))
                     sys.stderr.flush()
+        d1_prev = d1
 
         w = round(v * TRANSMISSION_SCALE, 0)
         w = min(max(w, -0x80 * CHANS), 0x80 * CHANS)
@@ -129,8 +130,8 @@ def main():
 
         cc, d = divmod(w + 0x80 * CHANS, 0x80)
         cc_send(d, cc)
-        print v, dtt, -1, 2; sys.stdout.flush()
-        if (time.time() > ts + 8): sys.exit(1)
+        #print v, dtt, -1, 2; sys.stdout.flush()
+        #if (time.time() > ts + 10): sys.exit(1)
         x, y, t_prev = 0., 0., t_now
         delta_prev = delta
         v_prev = v
