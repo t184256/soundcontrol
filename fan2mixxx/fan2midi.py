@@ -2,8 +2,8 @@
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 
 import sys
-import numpy
-from time import sleep, time
+import time
+from math import sqrt, pi, sin
 from evdev import InputDevice, ecodes
 
 import rtmidi
@@ -12,32 +12,27 @@ MidiOut.open_virtual_port(name='Fan')
 def cc_send(val, chan=0):
     return MidiOut.send_message([0xE0 + chan, 0, val])
 
-#SCALE = 1.
-#SCALE = 0.28
-SCALE = 0.080
-GAP = 0.15
+SCALE = 0.57
 X_TO_Y = 1.05
 TRANSMISSION_SCALE = 128
 CHANS = 8
-#EACH = 50
-EACH = 1
-RUNNING_AVERAGE = 256
-WEIGHT = 0.005
+INJECT_ZERO_AFTER = 0.01
+#FRICTION = 0.01
+#FRICTION2 = 0.05
+WEIGHT = 1./ 4
+SPEEDMATCH = 1./ 4
+WEIGHT_NEAR_ONE = 1./ 128
+SPEEDMATCH_NEAR_ONE = 1./ 8
+FORGIVING_NEAR_ONE = 0.33
+FORGIVING_NEAR_ONE_HIGHER_THAN = 3
+FORGIVING_NEAR_ONE_LOWER_THAN = 2
+FORGIVING_ADJUST_SCALE = 0.01
+FORGIVING_ADJUST_SCALE_BY = 0.0025
+TEND_TO_ONE = 0.03
+#tend_to_one_strength = lambda d1_n: d1_n**2 * (1-d1_n)**2 / 0.0625
+tend_to_one_strength = lambda d1_n: (1-d1_n)**(1./5)
 
-WEIGHTS_ = tuple(
-    float( ((RUNNING_AVERAGE - i)**2) * ((i - 0)**6)) / ((RUNNING_AVERAGE/2)**8)
-    for i in range(RUNNING_AVERAGE)
-)
-WEIGHTS = tuple(
-    numpy.array(WEIGHTS_[i:] + WEIGHTS_[:i], dtype=float)
-    for i in range(RUNNING_AVERAGE)
-)
 
-sys.stderr.write('start\n'); sys.stderr.flush()
-
-#weighted_sum = lambda l: sum(l[i] * WEIGHTS[i] for i in range(RUNNING_AVERAGE))
-weighted_sum = lambda a, i: numpy.inner(a, WEIGHTS[i])
-#weighted_sum = lambda a, i: numpy.sum(a) / RUNNING_AVERAGE * 4
 et = lambda event: event.sec + event.usec * 1.e-6
 
 def main():
@@ -45,59 +40,100 @@ def main():
     dev = InputDevice(PATH)
     dev.grab()
 
-    x, y = 0, 0
-    tm = ts = time()
-    skippy = 0
-    running_average_x = numpy.array([0] * RUNNING_AVERAGE, dtype=float)
-    running_average_y = numpy.array([0] * RUNNING_AVERAGE, dtype=float)
-    difference = 0. # interstep difference to be compensated later
-    #avg_x, avg_y = 0., 0.
-    ra = 0.
-
-    i = 0
+    target = target_real = transmitted = 0.
+    delta_prev = 0.
+    x, y, t_prev = 0., 0., time.time()
+    v_prev = 0.
+    sys.stderr.write('start\n'); sys.stderr.flush()
+    ts = t_now = time.time()
+    i = 32
+    scale = SCALE
     while True:
-        x, y = 0., 0.
+        time.sleep(0.0005)
+        real_event = False
         try:
             e = dev.read_one()
             if e.type == ecodes.EV_REL:
                 if e.code == ecodes.REL_X:
-                    x = float(e.value) / SCALE
+                    x = float(e.value) / scale
                 else:
-                    y = float(-e.value) / (SCALE * X_TO_Y)
-            if e.type == ecodes.EV_SYN: x, y = 0, 0
+                    y = float(-e.value) / (scale * X_TO_Y)
+            if e.type == ecodes.EV_SYN:
+                t_now = et(e)
+                real_event = True
+            if not real_event: continue
         except:
-            e = None
-            x, y = 0, 0
-        #avg_x = avg_x * (1 - WEIGHT) + x * WEIGHT
-        #avg_y = avg_y * (1 - WEIGHT) + y * WEIGHT
-        running_average_x[i] = x
-        running_average_y[i] = y
-        ra_ = weighted_sum(running_average_x + running_average_y, i)
-        ra_ /= (2 * RUNNING_AVERAGE)
-        ra = ra * (1 - WEIGHT) + ra_ * WEIGHT
-        s = ra
-        if (s > 1) and (s < 1 + GAP): s = 1
-        if (s > 1 + GAP): s = s - GAP
-        if (divmod(skippy, EACH)[1] == 0):
-            z = s * TRANSMISSION_SCALE + difference
-            #w = int(z); w = min(max(w, -0x40), 0x40)
-            w = int(z); w = min(max(w, -0x100 * CHANS), 0x100 * CHANS)
-            difference = z - w;
-            t = w + 0x100 * CHANS;
-            cc, d = divmod(t, 0x100)
-            #if abs(difference) < 0.25: difference = 0
-            #print , cc * 0x100 + t - CHANS * 0x100
-            cc_send(d, cc)
-            #print ra
-            #print ra#, ra_, 0, 1, 2
-            #sys.stdout.flush()
-        tm += 0.0003
-        skippy += 1
-        while time() - tm < 0:
-            sleep(0.0001)
-        i += 1
-        if i == RUNNING_AVERAGE: i = 0
-        #if time() - ts > 5: sys.exit(1)
+            if time.time() - t_now < INJECT_ZERO_AFTER: continue
+            x, y, t_now = 0., 0., time.time()
+            real_event = False
+
+        #dt = t_now - t_prev
+        s = (x + y) / 2
+
+        if i > 0:
+            i -= 1
+            continue
+
+        dtt = target - transmitted
+        if abs(v_prev - 1.) < TEND_TO_ONE * 0.8:
+            if dtt > FORGIVING_NEAR_ONE_HIGHER_THAN:
+                target -= FORGIVING_NEAR_ONE
+                #sys.stderr.write('forg-\n'); sys.stderr.flush()
+            if dtt < -FORGIVING_NEAR_ONE_LOWER_THAN:
+                target += FORGIVING_NEAR_ONE
+                #sys.stderr.write('forg+\n'); sys.stderr.flush()
+        dtt = target - transmitted
+
+        target += s
+        target_real += s
+        delta = target - transmitted
+        if abs(v_prev - 1.) > TEND_TO_ONE * 0.9:
+            v = delta * SPEEDMATCH
+            v = v_prev * (1 - WEIGHT) + v * WEIGHT
+        else:
+            v = delta * SPEEDMATCH_NEAR_ONE
+            v = v_prev * (1 - WEIGHT_NEAR_ONE) + v * WEIGHT_NEAR_ONE
+        #v_delta = v - v_prev
+        #v_capped = 0
+        #if abs(v_delta) > FRICTION2:
+        #    v_capped = v_delta / abs(v_delta) * 2
+        #    v_sign = v_delta / abs(v_delta)
+        #    v_delta -= FRICTION2 * v_sign
+        #elif abs(v_delta) > FRICTION:
+        #    v_capped = v_delta / abs(v_delta)
+        #    v_sign = v_delta / abs(v_delta)
+        #    v_delta -= FRICTION * v_sign
+        #v = v_prev + v_delta
+
+        d1 = v - 1.
+        if abs(d1) < TEND_TO_ONE:
+            # in interval (-R, R), R = TEND_TO_ONE
+            # change d1 to d1 + TEND_TO_ONE_STRENGTH * sin(d1*2*pi/R)/(2*pi*R)
+            K = 2. * pi / TEND_TO_ONE
+            d1_norm = abs(d1) / TEND_TO_ONE
+            d1 = d1 + tend_to_one_strength(d1_norm) * sin(pi + d1 * K) / K
+            v = 1 + d1
+            if abs(v_prev - 1.) < abs(d1):
+                scale += FORGIVING_ADJUST_SCALE_BY * d1
+                if d1 > +FORGIVING_ADJUST_SCALE:
+                    sys.stderr.write('scale+ %s\n' % str(scale))
+                    sys.stderr.flush()
+                if d1 < -FORGIVING_ADJUST_SCALE:
+                    sys.stderr.write('scale- %s\n' % str(scale))
+                    sys.stderr.flush()
+
+        w = round(v * TRANSMISSION_SCALE, 0)
+        w = min(max(w, -0x80 * CHANS), 0x80 * CHANS)
+        d_transmitted = float(w) / TRANSMISSION_SCALE
+        transmitted += d_transmitted
+
+        cc, d = divmod(w + 0x80 * CHANS, 0x80)
+        cc_send(d, cc)
+        print v, dtt, -1, 2; sys.stdout.flush()
+        if (time.time() > ts + 8): sys.exit(1)
+        x, y, t_prev = 0., 0., t_now
+        delta_prev = delta
+        v_prev = v
 
 
 if __name__ == '__main__': main()

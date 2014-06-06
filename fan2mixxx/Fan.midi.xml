@@ -137,6 +137,14 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <group></group>
+                <key>Fan.scratch</key>
+                <status>0xEF</status>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
         </controls>
         <outputs/>
     </controller>

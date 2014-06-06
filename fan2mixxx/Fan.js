@@ -16,11 +16,15 @@ Fan.shutdown = function shutdown() {
 Fan.scratch = function scratch(channel, control, value, status, group) {
 	var deck = Fan.currentDeck == 1 ? "[Channel1]" : "[Channel2]";
 	var playing = engine.getValue(deck, "play") ? 1. : 0.;
-	engine.setValue(deck, "scratch2_enable", true);
 	var c = channel - 0xE5;
-	value = channel * 256 + value - 2048;
+	value = channel * 128 + value - 1024;
+	print(channel + "\t" + value);
 	value /= Fan.TRANSMISSION_SCALE;
-	//print(value);
+	//var alpha = 1./8;
+	//var beta = alpha/32;
+	//engine.scratchEnable(1, 15000, 100./3, alpha/2, beta/2, true);
+	//engine.scratchTick(1, value);
+	engine.setValue(deck, "scratch2_enable", true);
 	engine.setValue(deck, "scratch2", value);
 };
 
