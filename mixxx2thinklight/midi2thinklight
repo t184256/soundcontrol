@@ -1,0 +1,32 @@
+#!/usr/bin/python -B
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+
+import os
+import time
+
+def blink_on():
+    os.system('echo 1 > /sys/class/leds/tpacpi\:\:thinklight/brightness')
+
+def blink_off():
+    os.system('echo 0 > /sys/class/leds/tpacpi\:\:thinklight/brightness')
+
+
+import rtmidi
+MidiIn = rtmidi.MidiIn(name='Thinklight')
+MidiOut = rtmidi.MidiOut(name='Thinklight')
+MidiOut.open_virtual_port(name='Thinklight')
+MidiIn.open_virtual_port(name='Thinklight')
+
+blink_off()
+v = False
+while True:
+    m = MidiIn.get_message();
+    if m:
+        v = not v
+        print m, v
+        if v:
+            blink_on()
+        else:
+            blink_off()
+    time.sleep(0.01)
+

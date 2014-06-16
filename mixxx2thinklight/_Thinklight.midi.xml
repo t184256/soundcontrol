@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="" schemaVersion="1">
+    <info>
+        <name>Thinklight</name>
+        <author>Alexander Sosedkin</author>
+    </info>
+    <controller id="Thinklight">
+        <scriptfiles>
+            <file functionprefix="Thinklight" filename="Thinklight.js"/>
+        </scriptfiles>
+        <controls/>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>beat_active</key>
+                <status>0x7F</status>
+                <midino>0x08</midino>
+                <on>0x01</on>
+            </output>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>

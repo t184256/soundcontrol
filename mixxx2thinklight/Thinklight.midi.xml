@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="" schemaVersion="1">
+    <info>
+        <name>Thinklight</name>
+        <author>Alexander Sosedkin</author>
+    </info>
+    <controller id="Thinklight">
+        <scriptfiles>
+            <file functionprefix="Thinklight" filename="Thinklight.js"/>
+        </scriptfiles>
+        <controls/>
+        <outputs>
+            <output>
+                <group>[Channel1]</group>
+                <key>beat_active</key>
+                <status>0xB0</status>
+                <midino>0x01</midino>
+                <on>0x08</on>
+                <off>0x00</off>
+		<maximum>1.0</maximum>  <!-- Optional upper value for the Mixxx control, above which the 'off' value is sent. 1.0 is the default. -->
+						<minimum>0.0</minimum>   <!-- Lower value for the Mixxx control, below which the 'off' value is sent -->
+            </output>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>
