@@ -10,6 +10,7 @@
         </scriptfiles>
         <controls>
             <control>
+                <group></group>
                 <key>X220T.scratch</key>
                 <status>0xE0</status>
                 <options>
@@ -17,6 +18,7 @@
                 </options>
             </control>
             <control>
+                <group></group>
                 <key>X220T.pressure</key>
                 <status>0xE1</status>
                 <options>
@@ -24,6 +26,7 @@
                 </options>
             </control>
             <control>
+                <group></group>
                 <key>X220T.clicktaps</key>
                 <status>0xE2</status>
                 <options>

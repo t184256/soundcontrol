@@ -25,8 +25,8 @@ X220T.scratch = function scratch(channel, control, value, status, group) {
 	//engine.setValue(group, "scratch2_enable", value < 0 || value > 0);
 	if (X220T.pressure < 4) X220T.locked = 0;
 	if (X220T.locked != 1) {
-		p = X220T.pressure / 36;
-		if (X220T.pressure >= 36) { p = 1.; X220T.locked = 1; }
+		p = X220T.pressure / 32;
+		if (X220T.pressure >= 32) { p = 1.; X220T.locked = 1; }
 		value = p * value + (1. - p) * playing;
 	}
 	if ((X220T.inertia > 30 && X220T.speed > 0) ||
