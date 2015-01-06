@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="1.11+" schemaVersion="1">
+    <info>
+        <name>Sony SixxAxis</name>
+        <author>Ilkka Tuohela</author>
+        <description>HID mapping for Sony SixxAxis Game Controller</description>
+        <forums>http://www.mixxx.org/forums/viewtopic.php?f=7&amp;t=3940</forums>
+    </info>
+    <controller id="PLAYSTATION(R)3">
+        <scriptfiles>
+            <file functionprefix="" filename="common-hid-packet-parser.js"/>
+            <file functionprefix="SonySixxAxis" filename="Sony-SixxAxis.js"/>
+        </scriptfiles>
+    </controller>
+</MixxxControllerPreset>
