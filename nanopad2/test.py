@@ -44,20 +44,24 @@ while True:
     midi_data = midi_in.Read(1) # read only 1 message at a time
     t = midi_data[0][1]
     a, b, c, d = midi_data[0][0][0], midi_data[0][0][1], midi_data[0][0][2], midi_data[0][0][3]
-    #if a == 176:
-    #    # touchpad
-    #    if b == 16:
-    #        pressed = (c == 127)
-    #        if pressed:
-    #            midi_out.Write([[[0x90+0, FIRST_NOTE + 0, c], pypm.Time()]])
-    #            print 'on'
-    #        else:
-    #            midi_out.Write([[[0x80+0, FIRST_NOTE + 0, c], pypm.Time()]])
-    #            print 'off'
-    #    else:
-    #        continue
-    #elif a == 144:
-    if a == 144:
+    if a == 176:
+        # touchpad
+        if b == 16:
+            pressed = (c == 127)
+            if pressed:
+                pass
+                #midi_out.Write([[[0x90+0, FIRST_NOTE + 0, c], pypm.Time()]])
+                #print 'on'
+            else:
+                midi_out.Write([[[0x80+0, FIRST_NOTE + 0, c], pypm.Time()]])
+                midi_out.Write([[[0x80+1, SECOND_NOTE + 0, c], pypm.Time()]])
+                #midi_out.Write([[[0x90+0, FIRST_NOTE + 0, c], pypm.Time()]])
+                pass
+                #midi_out.Write([[[0x80+0, FIRST_NOTE + 0, c], pypm.Time()]])
+                #print 'off'
+        else:
+            continue
+    elif a == 144:
         # pad pressed
         if b == PADS1[-1]:
             # noteon for the first pad row
@@ -72,11 +76,13 @@ while True:
     elif a == 128:
         if b == PADS1[-1]:
             # noteoff for the first pad row
-            midi_out.Write([[[0x80+0, FIRST_NOTE + 0, c], pypm.Time()]])
+            if not pressed:
+                midi_out.Write([[[0x80+0, FIRST_NOTE + 0, c], pypm.Time()]])
             continue
         if b == PADS2[-1]:
             # noteoff for the second pad row
-            midi_out.Write([[[0x80+1, SECOND_NOTE + 0, c], pypm.Time()]])
+            if not pressed:
+                midi_out.Write([[[0x80+1, SECOND_NOTE + 0, c], pypm.Time()+1000]])
             continue
         if b in PADS1: pads1_pressed[PADS1.index(b)] = False
         if b in PADS2: pads2_pressed[PADS2.index(b)] = False
