@@ -1,10 +1,12 @@
 #!/usr/bin/python
 
-import pypm, sys
+import pypm, sys, time
 
 DEV_NAME = 'nanoPAD2 MIDI 1'
 OUT_NAME = 'fs'
-FIRST_NOTE = 60
+#OUT_NAME = 'MIDI IN'
+#OUT_NAME = 'Synth input port (20116:0)'
+FIRST_NOTE = 36
 SECOND_NOTE = FIRST_NOTE + 5
 PADS1 = range(51, 35, -2)
 PADS2 = range(50, 34, -2)
@@ -36,7 +38,9 @@ pads1_pressed = [False] * 7
 pads2_pressed = [False] * 7
 note = 0
 while True:
-    while not midi_in.Poll(): pass
+    while not midi_in.Poll():
+        time.sleep(0.0001)
+        continue
     midi_data = midi_in.Read(1) # read only 1 message at a time
     t = midi_data[0][1]
     a, b, c, d = midi_data[0][0][0], midi_data[0][0][1], midi_data[0][0][2], midi_data[0][0][3]
@@ -68,11 +72,11 @@ while True:
     elif a == 128:
         if b == PADS1[-1]:
             # noteoff for the first pad row
-            #midi_out.Write([[[0x80+0, FIRST_NOTE + 0, c], pypm.Time()]])
+            midi_out.Write([[[0x80+0, FIRST_NOTE + 0, c], pypm.Time()]])
             continue
         if b == PADS2[-1]:
             # noteoff for the second pad row
-            #midi_out.Write([[[0x80+1, SECOND_NOTE + 0, c], pypm.Time()]])
+            midi_out.Write([[[0x80+1, SECOND_NOTE + 0, c], pypm.Time()]])
             continue
         if b in PADS1: pads1_pressed[PADS1.index(b)] = False
         if b in PADS2: pads2_pressed[PADS2.index(b)] = False
